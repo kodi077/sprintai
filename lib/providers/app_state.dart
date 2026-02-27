@@ -107,9 +107,9 @@ class AppState extends ChangeNotifier {
     try {
       final plan = await _aiService.analyzePrd(
         prdText: _prdText,
-        stack: _stack,
-        conversationId: _selectedConversationId,
-        mode: _isAuthenticated ? 'auth' : 'guest',
+        frontend: _stack.frontend ?? '',
+        backend: _stack.backend ?? '',
+        database: _stack.database,
       );
 
       _currentPlan = plan;

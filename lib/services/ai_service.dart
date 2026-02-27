@@ -3,69 +3,120 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../config/app_constants.dart';
-import '../config/mock_sprint_plan.dart';
-import '../models/app_error.dart';
 import '../models/sprint_plan_model.dart';
-import '../models/stack_model.dart';
+
+class AiException implements Exception {
+  const AiException({
+    required this.code,
+    required this.messageKo,
+    this.retryAfterSec,
+  });
+
+  final String code;
+  final String messageKo;
+  final int? retryAfterSec;
+
+  @override
+  String toString() => messageKo;
+}
+
+const Map<String, dynamic> _mockSprintPlan = <String, dynamic>{
+  'project_title': 'Mock Sprint Plan (개발 테스트용)',
+  'stack': <String, dynamic>{
+    'frontend': 'Flutter',
+    'backend': 'Supabase',
+    'database': 'PostgreSQL',
+  },
+  'epics': <Map<String, dynamic>>[
+    <String, dynamic>{
+      'id': 'E1',
+      'name': 'User Authentication',
+      'description': 'Implement login and session management.',
+      'story_points': 8,
+      'tasks': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'id': 'E1-T1',
+          'name': 'Email OTP Login',
+          'description': 'Allow users to log in with email OTP.',
+          'story_points': 5,
+          'subtasks': <Map<String, dynamic>>[
+            <String, dynamic>{'name': 'Create login UI', 'story_points': 2},
+            <String, dynamic>{
+              'name': 'Integrate Supabase Auth',
+              'story_points': 3,
+            },
+          ],
+          'acceptance_criteria': <String>[
+            'User can enter email and receive OTP',
+            'User is redirected to home after successful login',
+          ],
+          'risks': <String>['Email delivery delay may cause poor UX'],
+        },
+      ],
+    },
+  ],
+};
 
 class AiService {
   const AiService();
 
+  static const String _edgeFunctionUrl = kAnalyzePrdEndpoint;
+
   Future<SprintPlan> analyzePrd({
     required String prdText,
-    required StackSelection stack,
-    required String mode,
-    String? conversationId,
+    required String frontend,
+    required String backend,
+    String? database,
   }) async {
     if (kUseMockAi) {
-      return SprintPlan.fromJson(jsonDecode(kMockSprintPlanJson) as Map<String, dynamic>);
+      await Future<void>.delayed(const Duration(seconds: 2));
+      return SprintPlan.fromJson(_mockSprintPlan);
     }
 
-    if (kAnalyzePrdEndpoint.trim().isEmpty) {
-      throw const AppError(code: ErrorCode.serverError, message: 'Missing analyze_prd endpoint.');
-    }
-
-    final response = await http.post(
-      Uri.parse(kAnalyzePrdEndpoint),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'prdText': prdText,
-        'stack': stack.toJson(),
-        'conversationId': conversationId,
-        'mode': mode,
-      }),
-    );
-
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-
-    if (response.statusCode != 200) {
-      final error = (body['error'] as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{};
-      final code = (error['code'] as String?) ?? 'SERVER_ERROR';
-      throw AppError(
-        code: _parseErrorCode(code),
-        message: (error['message_ko'] as String?) ?? 'Server error',
-        retryAfterSec: (error['retry_after_sec'] as num?)?.toInt(),
+    if (_edgeFunctionUrl.trim().isEmpty) {
+      throw const AiException(
+        code: 'SERVER_ERROR',
+        messageKo: 'Edge Function URL이 설정되지 않았습니다.',
       );
     }
 
-    final data = (body['data'] as Map?)?.cast<String, dynamic>();
-    if (data == null || !data.containsKey('project_title') || !data.containsKey('epics')) {
-      throw const AppError(code: ErrorCode.serverError, message: 'Invalid response shape.');
+    final body = <String, dynamic>{
+      'prdText': prdText,
+      'stack': <String, dynamic>{
+        'frontend': frontend,
+        'backend': backend,
+        'database': database ?? '',
+      },
+      'conversationId': null,
+      'mode': 'guest',
+    };
+
+    final response = await http
+        .post(
+          Uri.parse(_edgeFunctionUrl),
+          headers: const <String, String>{'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 30));
+
+    final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (responseJson['error'] != null) {
+      final err = responseJson['error'] as Map<String, dynamic>;
+      throw AiException(
+        code: err['code'] as String? ?? 'SERVER_ERROR',
+        messageKo: err['message_ko'] as String? ?? '오류가 발생했습니다.',
+        retryAfterSec: (err['retry_after_sec'] as num?)?.toInt(),
+      );
     }
 
-    return SprintPlan.fromJson(data);
-  }
-
-  ErrorCode _parseErrorCode(String code) {
-    switch (code) {
-      case 'RATE_LIMITED':
-        return ErrorCode.rateLimited;
-      case 'DAILY_LIMIT':
-        return ErrorCode.dailyLimit;
-      case 'BAD_REQUEST':
-        return ErrorCode.badRequest;
-      default:
-        return ErrorCode.serverError;
+    if (responseJson['data'] != null) {
+      return SprintPlan.fromJson(responseJson['data'] as Map<String, dynamic>);
     }
+
+    throw const AiException(
+      code: 'SERVER_ERROR',
+      messageKo: '알 수 없는 오류가 발생했습니다.',
+    );
   }
 }

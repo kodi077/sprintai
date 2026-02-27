@@ -4,7 +4,10 @@ import 'package:provider/provider.dart';
 import 'dart:convert';
 
 import '../../config/app_constants.dart';
+import '../../models/conversation_model.dart';
 import '../../providers/app_provider.dart';
+import '../../services/ai_service.dart';
+import '../../services/database_service.dart';
 
 class PrdInputWidget extends StatefulWidget {
   const PrdInputWidget({super.key});
@@ -106,6 +109,134 @@ class _PrdInputWidgetState extends State<PrdInputWidget> {
   }
 
   Future<void> _onSubmit(BuildContext context) async {
-    // TODO: will be implemented in the AI service step
+    final provider = Provider.of<AppProvider>(context, listen: false);
+
+    // 유효성 검증 실패 시 API 요청 없이 종료
+    if (provider.prdText.trim().isEmpty) {
+      provider.setError('PRD를 입력해주세요.');
+      return;
+    }
+    if (!provider.stackSelection.isValid) {
+      provider.setError('프레임워크와 백엔드를 선택해주세요.');
+      return;
+    }
+
+    provider.setError(null);
+    provider.setLoading(true);
+    provider.setSprintPlan(null);
+
+    try {
+      final plan = await const AiService().analyzePrd(
+        prdText: provider.prdText.trim(),
+        frontend: provider.stackSelection.frontend!,
+        backend: provider.stackSelection.backend!,
+        database: provider.stackSelection.database,
+      );
+
+      provider.setSprintPlan(plan);
+
+      // 로그인 사용자만 대화/메시지 영속화
+      if (provider.currentUser != null) {
+        final dbService = DatabaseService();
+        final conversation = ConversationModel(
+          id: '',
+          userId: provider.currentUser!.id,
+          title: plan.projectTitle,
+          frontendStack: provider.stackSelection.frontend!,
+          backendStack: provider.stackSelection.backend!,
+          databaseStack: provider.stackSelection.database,
+          createdAt: DateTime.now(),
+        );
+        final saved = await dbService.createConversation(conversation);
+        await dbService.saveMessage(
+          MessageModel(
+            id: '',
+            conversationId: saved.id,
+            role: 'user',
+            content: provider.prdText.trim(),
+            createdAt: DateTime.now(),
+          ),
+        );
+        await dbService.saveMessage(
+          MessageModel(
+            id: '',
+            conversationId: saved.id,
+            role: 'assistant',
+            content: jsonEncode(plan.toJson()),
+            createdAt: DateTime.now(),
+          ),
+        );
+        final updated = await dbService.fetchConversations(
+          provider.currentUser!.id,
+        );
+        provider.setConversations(updated);
+        provider.setActiveConversation(saved);
+      }
+    } on AiException catch (e) {
+      // 요청 실패 시 자동 재시도 금지 (쿼터 보호)
+      if (context.mounted) {
+        _showErrorDialog(
+          context,
+          title: _titleForCode(e.code),
+          message: e.messageKo,
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        _showErrorDialog(
+          context,
+          title: AppStrings.serverErrorTitle,
+          message: AppStrings.serverErrorMessage,
+        );
+      }
+    } finally {
+      provider.setLoading(false);
+    }
+  }
+
+  String _titleForCode(String code) {
+    switch (code) {
+      case 'RATE_LIMITED':
+        return AppStrings.rateLimitedTitle;
+      case 'DAILY_LIMIT':
+        return AppStrings.dailyLimitTitle;
+      default:
+        return AppStrings.serverErrorTitle;
+    }
+  }
+
+  void _showErrorDialog(
+    BuildContext context, {
+    required String title,
+    required String message,
+  }) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.error,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 14,
+            height: 1.6,
+          ),
+        ),
+        actions: <Widget>[
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(AppStrings.confirm),
+          ),
+        ],
+      ),
+    );
   }
 }
