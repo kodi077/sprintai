@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_constants.dart';
 import '../../models/sprint_plan_model.dart';
+import '../../utils/export_utils.dart';
 import 'epic_card_widget.dart';
 
 class SprintPlanResultWidget extends StatelessWidget {
@@ -29,13 +30,13 @@ class SprintPlanResultWidget extends StatelessWidget {
                 ),
               ),
               TextButton.icon(
-                onPressed: () {},
+                onPressed: () => ExportUtils.exportToJiraCsv(plan),
                 icon: const Icon(Icons.download),
                 label: const Text(AppStrings.exportJira),
               ),
               const SizedBox(width: 8),
               TextButton.icon(
-                onPressed: () {},
+                onPressed: () => ExportUtils.exportToNotionMarkdown(plan),
                 icon: const Icon(Icons.description),
                 label: const Text(AppStrings.exportNotion),
               ),

@@ -9,6 +9,7 @@ import 'config/app_theme.dart';
 import 'config/supabase_config.dart';
 import 'providers/app_provider.dart';
 import 'screens/home_screen.dart';
+import 'services/database_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,8 +38,19 @@ class _SprintAiAppState extends State<SprintAiApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<AppProvider>(context, listen: false);
       provider.setUser(Supabase.instance.client.auth.currentUser);
-      _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((
+        data,
+      ) async {
         provider.setUser(data.session?.user);
+        if (data.session?.user != null) {
+          final dbService = DatabaseService();
+          final conversations = await dbService.fetchConversations(
+            data.session!.user.id,
+          );
+          provider.setConversations(conversations);
+        } else {
+          provider.setConversations([]);
+        }
       });
     });
   }
