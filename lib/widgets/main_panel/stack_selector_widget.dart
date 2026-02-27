@@ -15,8 +15,9 @@ class StackSelectorWidget extends StatelessWidget {
     return Container(
       color: AppColors.sidebar,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
         children: <Widget>[
           _buildDropdown(
             label: AppStrings.frontendLabel,
@@ -25,7 +26,6 @@ class StackSelectorWidget extends StatelessWidget {
             isRequired: true,
             onChanged: provider.setStackFrontend,
           ),
-          const SizedBox(width: 12),
           _buildDropdown(
             label: AppStrings.backendLabel,
             value: provider.stackSelection.backend,
@@ -33,7 +33,6 @@ class StackSelectorWidget extends StatelessWidget {
             isRequired: true,
             onChanged: provider.setStackBackend,
           ),
-          const SizedBox(width: 12),
           _buildDropdown(
             label: AppStrings.databaseLabel,
             value: provider.stackSelection.database,
