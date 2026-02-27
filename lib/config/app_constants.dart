@@ -63,7 +63,5 @@ class AppSizes {
 }
 
 const bool kUseMockAi = false;
-const String kAnalyzePrdEndpoint = String.fromEnvironment(
-  'ANALYZE_PRD_ENDPOINT',
-  defaultValue: '',
-);
+const String kAnalyzePrdEndpoint =
+    'https://hmbmkydxsixjkwdqsjrz.supabase.co/functions/v1/analyze_prd';
