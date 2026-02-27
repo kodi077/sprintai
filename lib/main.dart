@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,7 +8,6 @@ import 'config/app_constants.dart';
 import 'config/app_theme.dart';
 import 'config/supabase_config.dart';
 import 'providers/app_provider.dart';
-import 'providers/app_state.dart';
 import 'screens/home_screen.dart';
 
 Future<void> main() async {
@@ -20,21 +21,43 @@ Future<void> main() async {
   runApp(const SprintAiApp());
 }
 
-class SprintAiApp extends StatelessWidget {
+class SprintAiApp extends StatefulWidget {
   const SprintAiApp({super.key});
+
+  @override
+  State<SprintAiApp> createState() => _SprintAiAppState();
+}
+
+class _SprintAiAppState extends State<SprintAiApp> {
+  StreamSubscription<AuthState>? _authSub;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<AppProvider>(context, listen: false);
+      provider.setUser(Supabase.instance.client.auth.currentUser);
+      _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        provider.setUser(data.session?.user);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<AppProvider>(
       create: (_) => AppProvider(),
-      child: ChangeNotifierProvider<AppState>(
-        create: (_) => AppState(),
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: AppStrings.appTitle,
-          theme: AppTheme.dark,
-          home: const HomeScreen(),
-        ),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: AppStrings.appTitle,
+        theme: AppTheme.dark,
+        home: const HomeScreen(),
       ),
     );
   }

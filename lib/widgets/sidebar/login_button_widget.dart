@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../config/app_constants.dart';
 import '../../providers/app_provider.dart';
+import '../../services/auth_service.dart';
+import 'login_dialog_widget.dart';
 
 class LoginButtonWidget extends StatelessWidget {
   const LoginButtonWidget({super.key});
@@ -14,7 +16,14 @@ class LoginButtonWidget extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(12),
       child: TextButton(
-        onPressed: () {},
+        onPressed: provider.currentUser == null
+            ? () => showDialog<void>(
+                context: context,
+                builder: (_) => const LoginDialog(),
+              )
+            : () async {
+                await AuthService().signOut();
+              },
         child: Text(
           provider.currentUser == null ? AppStrings.login : AppStrings.logout,
           style: TextStyle(
