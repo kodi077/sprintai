@@ -1,21 +1,15 @@
 class StackSelection {
-  const StackSelection({
-    required this.frontend,
-    required this.backend,
-    required this.database,
-  });
+  StackSelection({this.frontend, this.backend, this.database});
 
-  const StackSelection.empty()
-      : frontend = null,
-        backend = null,
-        database = null;
+  StackSelection.empty() : frontend = null, backend = null, database = null;
 
-  final String? frontend;
-  final String? backend;
-  final String? database;
+  String? frontend;
+  String? backend;
+  String? database;
 
   bool get isValid {
-    return (frontend ?? '').trim().isNotEmpty && (backend ?? '').trim().isNotEmpty;
+    return (frontend ?? '').trim().isNotEmpty &&
+        (backend ?? '').trim().isNotEmpty;
   }
 
   StackSelection copyWith({
@@ -31,12 +25,16 @@ class StackSelection {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
-      'frontend': frontend,
-      'backend': backend,
-      'database': database,
+      'frontend': frontend ?? '',
+      'backend': backend ?? '',
+      'database': database ?? '',
     };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'frontend': frontend, 'backend': backend, 'database': database};
   }
 
   static const List<String> frontendOptions = [

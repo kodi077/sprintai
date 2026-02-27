@@ -13,11 +13,9 @@ import '../services/ai_service.dart';
 import '../services/export_service.dart';
 
 class AppState extends ChangeNotifier {
-  AppState({
-    AiService? aiService,
-    ExportService? exportService,
-  })  : _aiService = aiService ?? const AiService(),
-        _exportService = exportService ?? const ExportService() {
+  AppState({AiService? aiService, ExportService? exportService})
+    : _aiService = aiService ?? const AiService(),
+      _exportService = exportService ?? const ExportService() {
     _loadPersistedConversations();
   }
 
@@ -26,7 +24,7 @@ class AppState extends ChangeNotifier {
 
   final List<Conversation> _conversations = <Conversation>[];
 
-  StackSelection _stack = const StackSelection.empty();
+  StackSelection _stack = StackSelection.empty();
   String _prdText = '';
   SprintPlan? _currentPlan;
   String? _selectedConversationId;
@@ -34,7 +32,8 @@ class AppState extends ChangeNotifier {
   bool _isAuthenticated = false;
   String _userLabel = AppStrings.guestUser;
 
-  List<Conversation> get conversations => List<Conversation>.unmodifiable(_conversations);
+  List<Conversation> get conversations =>
+      List<Conversation>.unmodifiable(_conversations);
   StackSelection get stack => _stack;
   String get prdText => _prdText;
   SprintPlan? get currentPlan => _currentPlan;
@@ -89,11 +88,17 @@ class AppState extends ChangeNotifier {
     }
 
     if (!_stack.isValid) {
-      throw const AppError(code: ErrorCode.badRequest, message: 'Stack selection is required.');
+      throw const AppError(
+        code: ErrorCode.badRequest,
+        message: 'Stack selection is required.',
+      );
     }
 
     if (_prdText.trim().isEmpty) {
-      throw const AppError(code: ErrorCode.badRequest, message: 'PRD is required.');
+      throw const AppError(
+        code: ErrorCode.badRequest,
+        message: 'PRD is required.',
+      );
     }
 
     _isLoading = true;
@@ -110,7 +115,9 @@ class AppState extends ChangeNotifier {
       _currentPlan = plan;
       if (_isAuthenticated) {
         final conversation = Conversation(
-          id: _selectedConversationId ?? DateTime.now().microsecondsSinceEpoch.toString(),
+          id:
+              _selectedConversationId ??
+              DateTime.now().microsecondsSinceEpoch.toString(),
           title: plan.projectTitle,
           createdAt: DateTime.now(),
           plan: plan,
@@ -173,7 +180,9 @@ class AppState extends ChangeNotifier {
       return;
     }
 
-    final conversation = _conversations.where((item) => item.id == id).firstOrNull;
+    final conversation = _conversations
+        .where((item) => item.id == id)
+        .firstOrNull;
     if (conversation == null) {
       return;
     }
@@ -184,7 +193,9 @@ class AppState extends ChangeNotifier {
   }
 
   void _upsertConversation(Conversation conversation) {
-    final index = _conversations.indexWhere((item) => item.id == conversation.id);
+    final index = _conversations.indexWhere(
+      (item) => item.id == conversation.id,
+    );
     if (index == -1) {
       _conversations.insert(0, conversation);
       return;
@@ -207,7 +218,9 @@ class AppState extends ChangeNotifier {
           id: map['id'] as String,
           title: map['title'] as String,
           createdAt: DateTime.parse(map['created_at'] as String),
-          plan: SprintPlan.fromJson((map['plan'] as Map).cast<String, dynamic>()),
+          plan: SprintPlan.fromJson(
+            (map['plan'] as Map).cast<String, dynamic>(),
+          ),
         );
       }).toList();
 
@@ -221,12 +234,14 @@ class AppState extends ChangeNotifier {
 
   void _persistConversations() {
     final payload = _conversations
-        .map((item) => {
-              'id': item.id,
-              'title': item.title,
-              'created_at': item.createdAt.toIso8601String(),
-              'plan': item.plan.toJson(),
-            })
+        .map(
+          (item) => {
+            'id': item.id,
+            'title': item.title,
+            'created_at': item.createdAt.toIso8601String(),
+            'plan': item.plan.toJson(),
+          },
+        )
         .toList();
 
     html.window.localStorage['sprint_ai_conversations'] = jsonEncode(payload);
