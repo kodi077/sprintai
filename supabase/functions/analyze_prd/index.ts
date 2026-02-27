@@ -48,6 +48,48 @@ Required JSON schema:
   ]
 }`;
 
+function parseGeminiJson(rawText: string): Record<string, unknown> | null {
+  const cleaned = rawText
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim();
+
+  // 1) Direct parse
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (typeof parsed === "object" && parsed !== null) {
+      return parsed as Record<string, unknown>;
+    }
+    // Sometimes model returns quoted JSON string
+    if (typeof parsed === "string") {
+      const reparsed = JSON.parse(parsed);
+      if (typeof reparsed === "object" && reparsed !== null) {
+        return reparsed as Record<string, unknown>;
+      }
+    }
+  } catch {
+    // Fall through to extraction parse
+  }
+
+  // 2) Extract first object block and parse
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    const sliced = cleaned.slice(firstBrace, lastBrace + 1);
+    try {
+      const parsed = JSON.parse(sliced);
+      if (typeof parsed === "object" && parsed !== null) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return null;
+}
+
 // Helper: build a structured error response
 function errorResponse(
   code: string,
@@ -122,6 +164,7 @@ ${prdText.trim()}`;
       generationConfig: {
         temperature: 0.2,
         maxOutputTokens: 8192,
+        responseMimeType: "application/json",
       },
     };
 
@@ -172,19 +215,19 @@ ${prdText.trim()}`;
     const geminiData = await geminiResponse.json();
     const rawText: string =
       geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    console.log("[analyze_prd] gemini raw head:", rawText.slice(0, 500));
 
-    // Strip markdown code fences if Gemini wraps the output
-    const cleaned = rawText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/```\s*$/i, "")
-      .trim();
-
-    // Parse and validate the JSON
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch {
+    const parsed = parseGeminiJson(rawText);
+    if (!parsed) {
+      console.error("[analyze_prd] JSON.parse failed", {
+        rawHead: rawText.slice(0, 500),
+        cleanedHead: rawText
+          .replace(/^```json\s*/i, "")
+          .replace(/^```\s*/i, "")
+          .replace(/```\s*$/i, "")
+          .trim()
+          .slice(0, 500),
+      });
       return errorResponse(
         "SERVER_ERROR",
         "AI가 올바른 형식의 응답을 반환하지 않았습니다. 다시 시도해 주세요.",
@@ -192,9 +235,11 @@ ${prdText.trim()}`;
         422
       );
     }
-
-    const plan = parsed as Record<string, unknown>;
+    const plan = parsed;
     if (!plan.project_title || !Array.isArray(plan.epics)) {
+      console.error("[analyze_prd] schema check failed", {
+        keys: Object.keys(plan),
+      });
       return errorResponse(
         "SERVER_ERROR",
         "AI 응답에 필수 항목이 누락되었습니다. 다시 시도해 주세요.",

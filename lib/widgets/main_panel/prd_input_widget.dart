@@ -178,6 +178,9 @@ class _PrdInputWidgetState extends State<PrdInputWidget> {
         }
       }
     } on AiException catch (e) {
+      debugPrint(
+        '[PrdInput] AiException code=${e.code} retryAfter=${e.retryAfterSec} message=${e.messageKo}',
+      );
       // 요청 실패 시 자동 재시도 금지 (쿼터 보호)
       if (context.mounted) {
         _showErrorDialog(
@@ -186,7 +189,9 @@ class _PrdInputWidgetState extends State<PrdInputWidget> {
           message: e.messageKo,
         );
       }
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[PrdInput] unexpected error=$e');
+      debugPrint('$st');
       if (context.mounted) {
         _showErrorDialog(
           context,

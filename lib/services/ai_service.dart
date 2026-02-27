@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -91,6 +92,10 @@ class AiService {
       'conversationId': null,
       'mode': 'guest',
     };
+    // 디버그: 요청 메타 정보 출력 (PRD 본문은 길이만 출력)
+    debugPrint(
+      '[AiService] request stack=($frontend,$backend,${database ?? ''}) prdLen=${prdText.length}',
+    );
 
     final response = await http
         .post(
@@ -99,16 +104,21 @@ class AiService {
           body: jsonEncode(body),
         )
         .timeout(const Duration(minutes: 2), onTimeout: () {
+          debugPrint('[AiService] timeout after 2 minutes');
           throw const AiException(
             code: 'SERVER_ERROR',
             messageKo: '응답 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.',
           );
         });
+    debugPrint(
+      '[AiService] response status=${response.statusCode} bodyHead=${_head(response.body)}',
+    );
 
     Map<String, dynamic> responseJson;
     try {
       responseJson = jsonDecode(response.body) as Map<String, dynamic>;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[AiService] jsonDecode failed error=$e bodyHead=${_head(response.body)}');
       throw const AiException(
         code: 'SERVER_ERROR',
         messageKo: '서버 응답을 해석할 수 없습니다. 잠시 후 다시 시도해 주세요.',
@@ -117,6 +127,7 @@ class AiService {
 
     if (responseJson['error'] != null) {
       final err = responseJson['error'] as Map<String, dynamic>;
+      debugPrint('[AiService] error payload=$err');
       throw AiException(
         code: err['code'] as String? ?? 'SERVER_ERROR',
         messageKo: err['message_ko'] as String? ?? '오류가 발생했습니다.',
@@ -125,12 +136,22 @@ class AiService {
     }
 
     if (responseJson['data'] != null) {
+      debugPrint('[AiService] success payload keys=${responseJson.keys.toList()}');
       return SprintPlan.fromJson(responseJson['data'] as Map<String, dynamic>);
     }
 
+    debugPrint('[AiService] unexpected payload keys=${responseJson.keys.toList()}');
     throw const AiException(
       code: 'SERVER_ERROR',
       messageKo: '알 수 없는 오류가 발생했습니다.',
     );
+  }
+
+  String _head(String text, [int length = 300]) {
+    final normalized = text.replaceAll('\n', ' ');
+    if (normalized.length <= length) {
+      return normalized;
+    }
+    return '${normalized.substring(0, length)}...';
   }
 }
