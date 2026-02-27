@@ -41,8 +41,12 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ButtonStyle(
-          backgroundColor: WidgetStatePropertyAll<Color>(AppColors.primary),
-          foregroundColor: WidgetStatePropertyAll<Color>(AppColors.textPrimary),
+          backgroundColor: const WidgetStatePropertyAll<Color>(
+            AppColors.primary,
+          ),
+          foregroundColor: const WidgetStatePropertyAll<Color>(
+            AppColors.textPrimary,
+          ),
           shape: WidgetStatePropertyAll<OutlinedBorder>(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.borderRadius),
