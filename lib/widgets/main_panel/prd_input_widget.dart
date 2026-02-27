@@ -137,40 +137,45 @@ class _PrdInputWidgetState extends State<PrdInputWidget> {
 
       // 로그인 사용자만 대화/메시지 영속화
       if (provider.currentUser != null) {
-        final dbService = DatabaseService();
-        final conversation = ConversationModel(
-          id: '',
-          userId: provider.currentUser!.id,
-          title: plan.projectTitle,
-          frontendStack: provider.stackSelection.frontend!,
-          backendStack: provider.stackSelection.backend!,
-          databaseStack: provider.stackSelection.database,
-          createdAt: DateTime.now(),
-        );
-        final saved = await dbService.createConversation(conversation);
-        await dbService.saveMessage(
-          MessageModel(
+        try {
+          final dbService = DatabaseService();
+          final conversation = ConversationModel(
             id: '',
-            conversationId: saved.id,
-            role: 'user',
-            content: provider.prdText.trim(),
+            userId: provider.currentUser!.id,
+            title: plan.projectTitle,
+            frontendStack: provider.stackSelection.frontend!,
+            backendStack: provider.stackSelection.backend!,
+            databaseStack: provider.stackSelection.database,
             createdAt: DateTime.now(),
-          ),
-        );
-        await dbService.saveMessage(
-          MessageModel(
-            id: '',
-            conversationId: saved.id,
-            role: 'assistant',
-            content: jsonEncode(plan.toJson()),
-            createdAt: DateTime.now(),
-          ),
-        );
-        final updated = await dbService.fetchConversations(
-          provider.currentUser!.id,
-        );
-        provider.setConversations(updated);
-        provider.setActiveConversation(saved);
+          );
+          final saved = await dbService.createConversation(conversation);
+          await dbService.saveMessage(
+            MessageModel(
+              id: '',
+              conversationId: saved.id,
+              role: 'user',
+              content: provider.prdText.trim(),
+              createdAt: DateTime.now(),
+            ),
+          );
+          await dbService.saveMessage(
+            MessageModel(
+              id: '',
+              conversationId: saved.id,
+              role: 'assistant',
+              content: jsonEncode(plan.toJson()),
+              createdAt: DateTime.now(),
+            ),
+          );
+          final updated = await dbService.fetchConversations(
+            provider.currentUser!.id,
+          );
+          provider.setConversations(updated);
+          provider.setActiveConversation(saved);
+        } catch (e) {
+          // AI 결과는 이미 생성되었으므로 저장 실패는 화면 표시를 막지 않음
+          debugPrint('Failed to persist conversation: $e');
+        }
       }
     } on AiException catch (e) {
       // 요청 실패 시 자동 재시도 금지 (쿼터 보호)

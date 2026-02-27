@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:http/http.dart' as http;
 
@@ -97,9 +98,22 @@ class AiService {
           headers: const <String, String>{'Content-Type': 'application/json'},
           body: jsonEncode(body),
         )
-        .timeout(const Duration(seconds: 30));
+        .timeout(const Duration(minutes: 2), onTimeout: () {
+          throw const AiException(
+            code: 'SERVER_ERROR',
+            messageKo: '응답 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.',
+          );
+        });
 
-    final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+    Map<String, dynamic> responseJson;
+    try {
+      responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw const AiException(
+        code: 'SERVER_ERROR',
+        messageKo: '서버 응답을 해석할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+      );
+    }
 
     if (responseJson['error'] != null) {
       final err = responseJson['error'] as Map<String, dynamic>;
