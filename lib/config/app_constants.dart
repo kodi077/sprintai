@@ -62,6 +62,6 @@ class AppSizes {
   static const double paddingLarge = 24.0;
 }
 
-const bool kUseMockAi = true;
+const bool kUseMockAi = false;
 const String kAnalyzePrdEndpoint =
     'https://hmbmkydxsixjkwdqsjrz.supabase.co/functions/v1/analyze_prd';
