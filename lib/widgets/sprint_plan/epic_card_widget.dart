@@ -89,6 +89,28 @@ class _EpicCardWidgetState extends State<EpicCardWidget> {
                     .map((task) => TaskCardWidget(task: task))
                     .toList(),
               ),
+            if (_expanded)
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  bottom: 12,
+                  top: 4,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: <Widget>[
+                    Text(
+                      '총 ${widget.epic.tasks.fold(0, (sum, t) => sum + t.storyPoints)} SP',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),

@@ -10,14 +10,26 @@ class MainPanelWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        StackSelectorWidget(),
-        Divider(height: 1, color: AppColors.border),
+        const StackSelectorWidget(),
+        const Divider(height: 1, color: AppColors.border),
         Expanded(
-          child: Column(
-            children: <Widget>[PrdInputWidget(), SprintPlanDisplayWidget()],
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: Column(
+              children: <Widget>[
+                const PrdInputWidget(),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: 400,
+                    maxHeight: double.infinity,
+                  ),
+                  child: const SprintPlanDisplayWidget(),
+                ),
+              ],
+            ),
           ),
         ),
       ],

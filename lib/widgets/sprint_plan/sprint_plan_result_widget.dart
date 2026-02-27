@@ -43,16 +43,50 @@ class SprintPlanResultWidget extends StatelessWidget {
             ],
           ),
         ),
-        const Divider(color: AppColors.border),
-        Expanded(
-          child: ListView.builder(
-            itemCount: plan.epics.length,
-            itemBuilder: (BuildContext context, int index) {
-              return EpicCardWidget(epic: plan.epics[index]);
-            },
+        Padding(
+          padding: const EdgeInsets.only(left: 16, bottom: 12),
+          child: Wrap(
+            spacing: 6,
+            children: <Widget>[
+              if ((plan.stack.frontend ?? '').isNotEmpty)
+                _buildBadge(plan.stack.frontend!),
+              if ((plan.stack.backend ?? '').isNotEmpty)
+                _buildBadge(plan.stack.backend!),
+              if (plan.stack.database != null &&
+                  plan.stack.database!.isNotEmpty)
+                _buildBadge(plan.stack.database!),
+            ],
           ),
         ),
+        const Divider(color: AppColors.border),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: plan.epics.length,
+          itemBuilder: (BuildContext context, int index) {
+            return EpicCardWidget(epic: plan.epics[index]);
+          },
+        ),
       ],
+    );
+  }
+
+  Widget _buildBadge(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: AppColors.primary,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }
