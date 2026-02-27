@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color background = Color(0xFF0F0F0F);
-  static const Color sidebar = Color(0xFF171717);
-  static const Color surface = Color(0xFF1E1E1E);
-  static const Color border = Color(0xFF2E2E2E);
-  static const Color primary = Color(0xFF7C3AED);
-  static const Color primaryHover = Color(0xFF6D28D9);
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFF9CA3AF);
+  static const Color background = Color(0xFF141922);
+  static const Color sidebar = Color(0xFF1A202B);
+  static const Color surface = Color(0xFF232B38);
+  static const Color border = Color(0xFF364152);
+  static const Color primary = Color(0xFF4F8EF7);
+  static const Color primaryHover = Color(0xFF3C77DA);
+  static const Color textPrimary = Color(0xFFF4F7FC);
+  static const Color textSecondary = Color(0xFFB2BDC9);
   static const Color error = Color(0xFFEF4444);
   static const Color success = Color(0xFF10B981);
 }
@@ -62,6 +62,6 @@ class AppSizes {
   static const double paddingLarge = 24.0;
 }
 
-const bool kUseMockAi = false;
+const bool kUseMockAi = true;
 const String kAnalyzePrdEndpoint =
     'https://hmbmkydxsixjkwdqsjrz.supabase.co/functions/v1/analyze_prd';
