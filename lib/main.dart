@@ -19,7 +19,12 @@ Future<void> main() async {
     anonKey: SupabaseConfig.anonKey,
   );
 
-  runApp(const SprintAiApp());
+  runApp(
+    ChangeNotifierProvider<AppProvider>(
+      create: (_) => AppProvider(),
+      child: const SprintAiApp(),
+    ),
+  );
 }
 
 class SprintAiApp extends StatefulWidget {
@@ -63,14 +68,11 @@ class _SprintAiAppState extends State<SprintAiApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<AppProvider>(
-      create: (_) => AppProvider(),
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: AppStrings.appTitle,
-        theme: AppTheme.dark,
-        home: const HomeScreen(),
-      ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: AppStrings.appTitle,
+      theme: AppTheme.dark,
+      home: const HomeScreen(),
     );
   }
 }

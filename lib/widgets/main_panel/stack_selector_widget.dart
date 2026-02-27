@@ -70,13 +70,20 @@ class StackSelectorWidget extends StatelessWidget {
                 color: AppColors.textSecondary,
                 fontSize: 13,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
+            isExpanded: true,
             onChanged: onChanged,
             items: options
                 .map(
                   (option) => DropdownMenuItem<String>(
                     value: option,
-                    child: Text(option),
+                    child: Text(
+                      option,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 )
                 .toList(),
